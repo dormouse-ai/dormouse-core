@@ -1,0 +1,52 @@
+name: ci
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: py${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e '.[dev]'
+      - name: lint
+        run: ruff check .
+      - name: format
+        run: ruff format --check .
+      - name: types
+        run: mypy src
+      - name: tests
+        run: python -m pytest -q
+
+  api-frozen:
+    name: public api is frozen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - name: compare the public surface with the recorded one
+        run: python tools/dump_api.py > /tmp/api.txt && diff -u api.txt /tmp/api.txt
+      - name: say what to do when it differs
+        if: failure()
+        run: |
+          echo "Public API changed."
+          echo "If intended: regenerate api.txt in the same commit and bump the version."
+          echo "If not: revert the signature change."
