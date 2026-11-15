@@ -2,27 +2,39 @@ name: ci
 
 on:
   push:
-    branches: [master, main]
+    branches: [master]
   pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PYTHONUNBUFFERED: "1"
+
 jobs:
   test:
     name: py${{ matrix.python }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.12", "3.13", "3.14"]
+        python: ["3.12", "3.13", "3.14", "3.15"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: ${{ matrix.python }}
-      - run: python -m pip install --upgrade pip
+          cache: pip
+          cache-dependency-path: pyproject.toml
       - run: pip install -e '.[dev]'
       - name: lint
         run: ruff check .
@@ -31,16 +43,65 @@ jobs:
       - name: types
         run: mypy src
       - name: tests
-        run: python -m pytest -q
+        run: python -m pytest --cov --cov-report=term-missing
+
+  build:
+    name: build the wheel
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install build
+      - run: python -m build
+      - name: the wheel imports, and ships py.typed, from a clean venv
+        run: |
+          python -m venv "${RUNNER_TEMP}/smoke"
+          "${RUNNER_TEMP}/smoke/bin/pip" install dist/*.whl
+          "${RUNNER_TEMP}/smoke/bin/python" -c "import dormouse_core, pathlib; p = pathlib.Path(dormouse_core.__file__).parent; assert (p / 'py.typed').is_file(), p"
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  audit:
+    name: audit the built wheel
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+      - run: pip install build pip-audit
+      - run: python -m build
+      - name: install the wheel and audit what it drags in
+        run: |
+          pip install dist/*.whl
+          pip-audit
 
   api-frozen:
     name: public api is frozen
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
       - run: pip install -e .
       - name: compare the public surface with the recorded one
         run: python tools/dump_api.py > /tmp/api.txt && diff -u api.txt /tmp/api.txt
