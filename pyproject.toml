@@ -53,8 +53,9 @@ warn_unreachable = true
 [tool.coverage.run]
 source = ["dormouse_core"]
 
-# The measured number on 2026-11-15 was 94%. The floor sits just below it, so an
-# honest regression fails the build and a refactor that drops one line does not.
+# The measured number on 2026-11-15 (Python 3.15, full suite) was 96.19%. The floor
+# sits just below it, so an honest regression fails the build and a refactor that
+# drops a line does not.
 [tool.coverage.report]
-fail_under = 92
+fail_under = 95
 show_missing = true

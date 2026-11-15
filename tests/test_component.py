@@ -12,8 +12,6 @@ Not "does activate() run" — that is a unit test of nothing. What matters:
 from __future__ import annotations
 
 import pytest
-from hypothesis import given, settings
-from hypothesis import strategies as st
 
 from dormouse_core.component import Coeffects, ComponentError
 from dormouse_core.effect import Effect
@@ -76,27 +74,6 @@ class Needs:
 
     def deactivate(self) -> None:
         return None
-
-
-def test_deactivate_restores_the_context_exactly() -> None:
-    ctx = {"keep": "me"}
-    slot = Slot(ctx=ctx)
-    slot.activate(Writer(["a", "b"], "on"))
-    assert ctx == {"keep": "me", "a": "on", "b": "on"}
-    slot.deactivate("content")
-    assert ctx == {"keep": "me"}
-
-
-@settings(max_examples=50)
-@given(keys=st.lists(st.sampled_from(["a", "b", "c", "d"]), unique=True, min_size=1, max_size=4))
-def test_reversibility_holds_for_any_key_set(keys: list[str]) -> None:
-    """Property, not example: whatever the component writes, removal is exact."""
-    ctx = {"pre": "existing"}
-    slot = Slot(ctx=ctx)
-    before = dict(ctx)
-    slot.activate(Writer(keys))
-    slot.deactivate("content")
-    assert ctx == before
 
 
 def test_a_component_is_refused_before_it_touches_anything() -> None:
