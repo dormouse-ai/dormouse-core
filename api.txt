@@ -9,4 +9,6 @@ errors.LoudError
 errors.Message
 errors.MissingReport
 order.topo_order
+plan.Phase
+plan.Plan
 slot.Slot
