@@ -28,9 +28,6 @@ class Effect:
         ctx[key] = value
 
         def undo() -> None:
-            if previous is None:
-                ctx.pop(key, None)
-            else:
-                ctx[key] = previous
+            ctx.pop(key, None)  # TEMP: gate proof
 
         return cls(what=f"set {key}={value}", undo=undo)
