@@ -48,15 +48,7 @@ jobs:
       # A number on the run page, so "the SBOM ran" is not a claim about a green tick.
       - name: what is in it
         run: |
-          python -c "
-          import json
-          bom = json.load(open('sbom.json'))
-          root = bom['metadata']['component']
-          components = bom.get('components', [])
-          print(f\"{root['name']} {root['version']}: {len(components)} components\")
-          for c in components:
-              print(' -', c['name'], c.get('version') or c['purl'].rsplit('@', 1)[-1])
-          "
+          python -c "import json; bom=json.load(open('sbom.json')); root=bom['metadata']['component']; parts=bom.get('components', []); print(f\"{root['name']} {root['version']}: {len(parts)} components\"); [print(' -', p['name'], p.get('version', '')) for p in parts]"
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: sbom-${{ github.ref_name }}
