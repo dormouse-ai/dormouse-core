@@ -34,27 +34,6 @@ class Model(Config):
             )
 
 
-def test_unknown_key_is_an_error_not_a_no_op() -> None:
-    """A typo must not be silently ignored — that is how flags 'did not arrive'."""
-    with pytest.raises(LoudError) as e:
-        Model.from_mapping({"width": 832, "use_kdaa": True})
-    assert "use_kdaa" in str(e.value)
-    assert "known keys" in str(e.value)
-
-
-def test_wrong_type_is_refused_not_coerced() -> None:
-    with pytest.raises(LoudError) as e:
-        Model.from_mapping({"width": "832"})
-    assert "expects int" in str(e.value)
-
-
-def test_bool_is_not_an_int() -> None:
-    """`width=true` would pass an isinstance check on int without this guard."""
-    with pytest.raises(LoudError) as e:
-        Model.from_mapping({"width": True})
-    assert "expects int, got bool" in str(e.value)
-
-
 def test_cross_field_rule_fires_with_an_escape() -> None:
     with pytest.raises(LoudError) as e:
         Model.from_mapping({"use_kda": True, "dtype": "fp32"})

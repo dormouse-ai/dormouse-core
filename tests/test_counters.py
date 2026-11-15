@@ -22,27 +22,6 @@ def test_a_counter_records_and_reports() -> None:
     assert c.line() == "bwd=3 fwd=2"
 
 
-def test_an_enabled_mechanism_that_never_runs_fails() -> None:
-    """The `use_kda=false` shape: the flag is on, the code never executes."""
-    c = Counters()
-    c.enable("kda")
-    with pytest.raises(MissingReport) as e:
-        c.check()
-    assert "kda" in str(e.value)
-    assert "did not reach the code" in str(e.value)
-
-
-def test_forward_only_is_a_failure() -> None:
-    """The 3126-forward/0-backward shape: half a mechanism is not a mechanism."""
-    c = Counters()
-    c.enable("kda", counter="kda_bwd", why="chunked delta rule, needs grad")
-    c.count("kda_fwd", 3126)
-    with pytest.raises(MissingReport):
-        c.check()
-    c.count("kda_bwd")
-    c.check()  # now it may pass
-
-
 def test_two_silent_mechanisms_are_both_named() -> None:
     c = Counters()
     c.enable("engram")

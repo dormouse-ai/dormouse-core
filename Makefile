@@ -2,13 +2,13 @@
 .PHONY: install check build
 
 install:
-	pip install -e '.[dev]'
+	uv sync --frozen --extra dev
 
 check:
-	ruff check .
-	ruff format --check .
-	mypy src
-	python -m pytest --cov --cov-report=term-missing
+	uv run --no-sync ruff check .
+	uv run --no-sync ruff format --check .
+	uv run --no-sync mypy src
+	uv run --no-sync python -m pytest --cov --cov-report=term-missing
 
 build:
-	python -m build
+	uv run --no-sync python -m build
