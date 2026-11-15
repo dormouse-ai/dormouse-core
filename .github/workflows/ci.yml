@@ -98,7 +98,7 @@ jobs:
           retention-days: 14
 
   audit:
-    name: audit the built wheel
+    name: audit the dependency closure
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -108,12 +108,13 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.12"
-      - run: pip install build pip-audit
-      - run: python -m build
-      - name: install the wheel and audit what it drags in
-        run: |
-          pip install dist/*.whl
-          pip-audit
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install pip-audit
+      # Audit the project, not a throwaway env: that is the set users resolve, and
+      # it keeps build tools (a stale setuptools) out of a security gate.
+      - name: audit the dependencies this package declares
+        run: pip-audit .
 
   api-frozen:
     name: public api is frozen
