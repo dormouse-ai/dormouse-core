@@ -8,6 +8,7 @@ errors.DormouseError
 errors.LoudError
 errors.Message
 errors.MissingReport
+journal.Journal
 order.topo_order
 plan.Phase
 plan.Plan
