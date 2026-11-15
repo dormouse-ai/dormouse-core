@@ -71,7 +71,7 @@ class Counters:
 
     def check(self) -> None:
         """Raise `MissingReport` listing every enabled mechanism that never ran."""
-        missing: list[str] = []  # TEMP: gate proof
+        missing = self.silent()
         if missing:
             raise MissingReport(missing)
 
