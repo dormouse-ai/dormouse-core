@@ -22,6 +22,9 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/dormouse_core"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"src/dormouse_core/py.typed" = "dormouse_core/py.typed"
+
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
