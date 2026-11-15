@@ -59,7 +59,7 @@ from dormouse_core import Coeffects, Counters, Effect, Slot
 counters = Counters()
 counters.enable("kda", counter="kda_bwd", why="chunked delta rule")
 counters.count("kda_fwd")
-counters.check()          # raises MissingReport: kda never reported a backward pass
+counters.check()  # raises MissingReport: kda never reported a backward pass
 ```
 
 ```python
@@ -67,10 +67,10 @@ class Rope:
     name, slot = "rope", "pos"
 
     def coeffects(self) -> Coeffects:
-        return Coeffects(provides={"pos": "rope"})     # it claims the position scheme
+        return Coeffects(provides={"pos": "rope"})  # it claims the position scheme
 
     def activate(self, ctx: dict[str, str]) -> list[Effect]:
-        return [Effect.set(ctx, "pos", "rope")]        # the inverse is carried with it
+        return [Effect.set(ctx, "pos", "rope")]  # the inverse is carried with it
 
     def deactivate(self) -> None:
         return None
@@ -80,7 +80,7 @@ slot = Slot()
 slot.activate(Rope())
 assert slot.ctx == {"pos": "rope"}
 slot.deactivate("pos")
-assert slot.ctx == {}                                  # exactly what it was
+assert slot.ctx == {}  # exactly what it was
 ```
 
 ## Install
