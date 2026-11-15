@@ -1,0 +1,36 @@
+# The CI check, at the moment the code is written instead of ten minutes into a run.
+#
+# Every hook is the CI command itself, run through uv, so the ruff/mypy/pytest
+# versions are the ones in uv.lock — not a second pin that drifts from them. Only the
+# pytest hook is deferred to `pre-push`: lint and types are a second, the suite is not.
+#
+#   make install            # once: the environment the hooks run in
+#   uvx pre-commit install  # once: the hook itself
+#   uvx pre-commit run --all-files
+#
+# No `--fix` and no file list: the hook is the failing check, not a different command
+# that happens to be nearby. The fix is the same command with `--fix`.
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check . (what CI runs)
+        entry: uv run --no-sync ruff check .
+        language: system
+        pass_filenames: false
+      - id: ruff-format
+        name: ruff format --check . (what CI runs)
+        entry: uv run --no-sync ruff format --check .
+        language: system
+        pass_filenames: false
+      - id: mypy
+        name: mypy src (what CI runs)
+        entry: uv run --no-sync mypy src
+        language: system
+        pass_filenames: false
+      - id: pytest
+        name: pytest -q (what CI runs, at pre-push)
+        entry: uv run --no-sync python -m pytest -q
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

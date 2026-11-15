@@ -41,10 +41,21 @@ jobs:
           # PEP 740: sign the uploads with this workflow's OIDC identity, so PyPI
           # can prove the wheel came from this repository and this commit.
           attestations: true
-      - name: github release with the artifacts
+      # GitHub's own generator, called explicitly so the notes are a step with an
+      # output rather than a flag: commits and PR titles since the previous tag, so a
+      # release page is never empty and never a hand-written summary that rots.
+      - name: release notes from the commits since the previous tag
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${GITHUB_REF_NAME}" dist/* --verify-tag --generate-notes
+        run: |
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
+            -f tag_name="${GITHUB_REF_NAME}" --jq .body > NOTES.md
+          test -s NOTES.md
+          wc -l NOTES.md
+      - name: github release with the artifacts and those notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" dist/* --verify-tag --notes-file NOTES.md
       - name: what to configure when publishing is not set up yet
         if: failure()
         run: |
@@ -56,3 +67,13 @@ jobs:
           echo "  Workflow name     : release.yml"
           echo "  Environment name  : pypi"
           echo "Then re-run this workflow. No PyPI token is stored in this repository."
+
+  sbom:
+    name: sbom
+    # After publish, so the bill of materials describes exactly what shipped. No
+    # timeout-minutes here for the reason the `checks` job gives above: the timeout
+    # belongs on the called workflow's own jobs, where it already is. The release
+    # is cut with GITHUB_TOKEN, and a release created by a token does not trigger a
+    # `release:` workflow, so this is a call and not an event.
+    needs: publish
+    uses: ./.github/workflows/sbom.yml

@@ -1,0 +1,65 @@
+name: sbom
+
+# The bill of materials for what a user installs: the resolved closure of uv.lock,
+# which is the exact set of packages, versions and (for a git dependency) commit that
+# `pip install dormouse-core` brings.
+#
+# Two ways in, and both are needed: `release.yml` calls it after publishing, so every
+# release has one, and `workflow_dispatch` runs it by hand, which is how the job is
+# proven without cutting a tag that would publish to PyPI.
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CYCLONEDX_BOM: "8.0.1"
+
+jobs:
+  sbom:
+    name: cyclonedx sbom.json
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.13.6"
+          cache-dependency-glob: uv.lock
+      # --frozen, so a stale lock is an error instead of a second opinion about what
+      # to ship. --no-emit-project keeps `-e .` out: the project is the root component.
+      - name: the closure the lockfile names
+        run: |
+          uv export --frozen --no-dev --no-hashes --no-emit-project \
+            --output-file requirements.txt
+          wc -l requirements.txt
+      - name: cyclonedx from that closure
+        run: |
+          python -m pip install --quiet "cyclonedx-bom==${CYCLONEDX_BOM}"
+          cyclonedx-py requirements requirements.txt \
+            --pyproject pyproject.toml --of json --output-file sbom.json
+      # A number on the run page, so "the SBOM ran" is not a claim about a green tick.
+      - name: what is in it
+        run: |
+          python -c "
+          import json
+          bom = json.load(open('sbom.json'))
+          root = bom['metadata']['component']
+          components = bom.get('components', [])
+          print(f\"{root['name']} {root['version']}: {len(components)} components\")
+          for c in components:
+              print(' -', c['name'], c.get('version') or c['purl'].rsplit('@', 1)[-1])
+          "
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: sbom-${{ github.ref_name }}
+          path: sbom.json
+          if-no-files-found: error
+          retention-days: 90
