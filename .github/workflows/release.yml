@@ -11,6 +11,7 @@ jobs:
   checks:
     name: checks
     uses: ./.github/workflows/ci.yml
+    timeout-minutes: 15
 
   publish:
     name: publish to pypi and cut a release
