@@ -1,6 +1,7 @@
 coeffects.Coeffects
 component.Component
 component.ComponentError
+config.Config
 counters.Counters
 effect.Effect
 errors.DormouseError
