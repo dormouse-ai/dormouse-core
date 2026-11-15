@@ -55,7 +55,7 @@ jobs:
           components = bom.get('components', [])
           print(f\"{root['name']} {root['version']}: {len(components)} components\")
           for c in components:
-              print(' -', c['name'], c.get('version') or c['purl'].rsplit('@', 1)[-1])
+              print(' -', c['name'], c.get('version', ''))
           "
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
