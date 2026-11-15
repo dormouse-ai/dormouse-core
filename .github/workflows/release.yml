@@ -10,8 +10,10 @@ permissions:
 jobs:
   checks:
     name: checks
+    # No timeout-minutes here: a job that calls a reusable workflow may only use
+    # name/uses/with/secrets/strategy/needs/if/concurrency/permissions. The
+    # timeout belongs on the called workflow's own jobs, where it already is.
     uses: ./.github/workflows/ci.yml
-    timeout-minutes: 15
 
   publish:
     name: publish to pypi and cut a release
